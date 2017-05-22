@@ -3,6 +3,9 @@ Markov Clustering
 '''
 import scipy
 import numpy as np
+import networkx as nx
+import matplotlib.pyplot as plt
+import itertools
 np.set_printoptions(threshold=np.inf)
 
 class MCL:
@@ -20,6 +23,8 @@ class MCL:
             - resulting cluster matrix
         '''
 
+        t_mat_cp = np.copy(self.t_mat)
+
         # Add self loops to each node
         for i in range(len(self.t_mat)):
             self.t_mat[i, i] = 1
@@ -29,7 +34,6 @@ class MCL:
         print ("normalized: ")
         print (self.t_mat)
         print ()
-        t_mat_cp = np.copy(self.t_mat)
 
         is_steady = False
         # while a steady state is not reached
@@ -67,6 +71,7 @@ class MCL:
             #print ()
 
         print (self.t_mat)
+        self.visualize(t_mat_cp)
 
     def normalize(self):
         for i in range(len(self.t_mat)):
@@ -74,6 +79,45 @@ class MCL:
             col_sum = col.sum()
             col = col/col_sum
             self.t_mat[:, i] = col
+
+    def visualize(self, mat):
+        G = nx.Graph()
+        for i in range(len(mat)):
+            row = mat[i, :]
+            nonzero_indices = np.where(row!=0)[0]
+            for ind in nonzero_indices:
+                G.add_edge(i, ind)
+
+        cluster_nodes = []
+        cluster_edges = []
+        for i in range(len(self.t_mat)):
+            row = self.t_mat[i,:]
+            nonzero_indices = np.where(row!=0)[0]
+            cur_edges = []
+            if len(nonzero_indices) > 0:
+                cluster_nodes.append(nonzero_indices)
+                edge_perm = itertools.combinations(nonzero_indices, 2)
+                for edge in edge_perm:
+                    if mat[edge[0],edge[1]] == 1:
+                        cur_edges.append(edge)
+            if len(cur_edges) > 0:
+                cluster_edges.append(cur_edges)
+
+        print(cluster_edges)
+
+        graph_pos = nx.spring_layout(G)
+
+        nx.draw_networkx_nodes(G, graph_pos, node_size=1000, node_color='blue', alpha = 0.3)
+        nx.draw_networkx_edges(G, graph_pos)
+
+        base_color = 0
+        color = ["r", "g", "b", "m", "y", "pink", "purple", "orange", "dodgerblue", "chartruesse", "dimgrey"]
+        for edges in cluster_edges:
+            print ("edges: ", edges)
+            nx.draw_networkx_edges(G, graph_pos, edgelist=edges, width=8, alpha=0.5, edge_color=color[base_color])
+            base_color += 1
+        nx.draw_networkx_labels(G, graph_pos, font_size=12, font_family='sans-serif')
+        plt.show()
 
 def preprocess(filename):
     '''
@@ -114,8 +158,8 @@ def preprocess(filename):
 def main():
     # preprocess dataset, returns transition matrix out of it
     # options: weighted/ unweighted
-    filename = "animal_data/dolphins/out.dolphins"
-    #filename = 'test_data.txt'
+    #filename = "animal_data/dolphins/out.dolphins"
+    filename = 'test_data.txt'
     t_mat = preprocess(filename)
 
     # clustering
