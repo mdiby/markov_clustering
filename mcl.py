@@ -83,6 +83,7 @@ class MCL:
     def visualize(self, mat):
         G = nx.Graph()
         for i in range(len(mat)):
+            G.add_node(i)
             row = mat[i, :]
             nonzero_indices = np.where(row!=0)[0]
             for ind in nonzero_indices:
@@ -105,13 +106,13 @@ class MCL:
 
         print(cluster_edges)
 
-        graph_pos = nx.spring_layout(G)
+        graph_pos = nx.fruchterman_reingold_layout(G)
 
-        nx.draw_networkx_nodes(G, graph_pos, node_size=1000, node_color='blue', alpha = 0.3)
+        nx.draw_networkx_nodes(G, graph_pos, node_size=300, node_color='blue', alpha = 0.3)
         nx.draw_networkx_edges(G, graph_pos)
 
         base_color = 0
-        color = ["r", "g", "b", "m", "y", "pink", "purple", "orange", "dodgerblue", "chartruesse", "dimgrey"]
+        color = ["r", "g", "b", "m", "y", "pink", "purple", "orange", "dodgerblue", "chartreuse", "dimgrey", "khaki", "coral", "maroon"]
         for edges in cluster_edges:
             print ("edges: ", edges)
             nx.draw_networkx_edges(G, graph_pos, edgelist=edges, width=8, alpha=0.5, edge_color=color[base_color])
@@ -130,7 +131,7 @@ def preprocess(filename):
     with open(filename, 'r') as f:
         for line in f:
             new_data = line.split()
-            if (not len(new_data) == 3):
+            if  len(new_data) == 2:
                 node1 = int(new_data[0])
                 node2 = int(new_data[1])
                 if (node1 in data_dict):
@@ -159,11 +160,12 @@ def main():
     # preprocess dataset, returns transition matrix out of it
     # options: weighted/ unweighted
     #filename = "animal_data/dolphins/out.dolphins"
-    filename = 'test_data.txt'
+    filename = "animal_data/moreno_zebra/out.moreno_zebra_zebra"
+    #filename = 'test_data.txt'
     t_mat = preprocess(filename)
 
     # clustering
-    e = 2
+    e = 3
     r = 2
     mcl = MCL(t_mat, e, r)
     mcl.mcl_clustering()
