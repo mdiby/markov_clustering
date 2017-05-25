@@ -31,9 +31,9 @@ class MCL:
 
         # Normalize the matrix
         self.normalize()
-        print ("normalized: ")
-        print (self.t_mat)
-        print ()
+        #print ("normalized: ")
+        # print (self.t_mat)
+        #print ()
 
         is_steady = False
         # while a steady state is not reached
@@ -65,7 +65,7 @@ class MCL:
             diff_mat = np.absolute(diff_mat)
             diff = diff_mat.sum()
             #print(diff_mat)
-            print("diff: ", diff)
+            # print("diff: ", diff)
             if diff < 0.0001:
                 is_steady = True
             #print ()
@@ -76,6 +76,8 @@ class MCL:
         print("modularity:", modularity)
         conductance = self.get_conductance(t_mat_cp)
         print("conductance: ", conductance)
+        coverage = self.get_coverage(t_mat_cp)
+        print("coverage: ", coverage)
 
         self.visualize(t_mat_cp)
 
@@ -87,45 +89,63 @@ class MCL:
             self.t_mat[:, i] = col
 
     def get_modularity(self, mat):
+        '''
+        Assessment 1: Modularity
+        '''
         modularity = 0
         E = np.count_nonzero(mat)
-
+        edges = set()
         for i in range(len(self.t_mat)):
             row = self.t_mat[i,:]
             nonzero_indices = np.where(row!=0)[0]
             if len(nonzero_indices) > 0:
                 inter_cluster_edges = itertools.combinations(nonzero_indices, 2)
                 cur_edges = []
+                unique_edges = 0
                 # Finding inter cluster edges
                 for edge in inter_cluster_edges:
                     if mat[edge[0],edge[1]] == 1:
-                        cur_edges.append(edge)
+                        if edge not in edges:
+                            cur_edges.append(edge)
+                            edges.add(edge)
+                            unique_edges += 1
                 ekk = 2 * len(cur_edges)
                 ak = 0
-                for j in range(len(mat)):
-                    if row[j] != 0:
-                        ak_list = np.where(mat[j,:]!=0)[0]
-                        ak = ak + len(ak_list)
+                if unique_edges != 0:
+                    for j in range(len(mat)):
+                        if row[j] != 0:
+                            ak_list = np.where(mat[j,:]!=0)[0]
+                            ak = ak + len(ak_list)
+                print ("ekk: ", ekk, " ak: ", ak, " E: ", E)
                 modularity = modularity + ((ekk/E)-(ak/E)**2)
         return modularity
 
     def get_conductance(self, mat):
+        '''
+        Assessment 2: Conductance
+        '''
         conductance = 0
         E = np.count_nonzero(mat)/2
         k = 0
+        edges = set()
         for i in range(len(self.t_mat)):
             row = self.t_mat[i,:]
             nonzero_indices = np.where(row!=0)[0]
             if len(nonzero_indices) > 0:
-                k += 1
                 inter_cluster_edges = itertools.combinations(nonzero_indices, 2)
                 cur_edges = []
+                unique_edges = 0
                 # Finding inter cluster edges
                 for edge in inter_cluster_edges:
                     if mat[edge[0],edge[1]] == 1:
-                        cur_edges.append(edge)
+                        if edge not in edges:
+                            cur_edges.append(edge)
+                            edges.add(edge)
+                            unique_edges += 1
                 intra_edges = len(cur_edges)
                 aj = 0
+
+                # Calculating aj, any edges within or that connect to the cluster
                 for j in range(len(mat)):
                     if row[j] != 0:
                         aj_list = np.where(mat[j,:]!=0)[0]
@@ -133,10 +153,38 @@ class MCL:
                 Aij = aj - (2 * intra_edges)
                 Ask = intra_edges + Aij
                 Askc = E - intra_edges
-                conductance = conductance + (Aij/min(Ask, Askc))
+
+
+                # only compute conductance if cluster is unique
+                if unique_edges != 0:
+                    conductance = conductance + (Aij/min(Ask, Askc))
+                    print ("aj: ", aj, "Aij: ", Aij, " Ask: ", Ask, " Askc: ", Askc)
+                    k += 1
         conductance = 1 - (conductance / k)
+        print("K: ", k)
         return conductance
 
+    def get_coverage(self, mat):
+        '''
+        Assessment 3: Coverage
+        '''
+        coverage = 0
+        E = np.count_nonzero(mat)/2
+        intra_edges = 0
+        edges = set()
+        for i in range(len(self.t_mat)):
+            row = self.t_mat[i,:]
+            nonzero_indices = np.where(row!=0)[0]
+            if len(nonzero_indices) > 0:
+                inter_cluster_edges = itertools.combinations(nonzero_indices, 2)
+                # Finding inter cluster edges
+                for edge in inter_cluster_edges:
+                    if mat[edge[0],edge[1]] == 1:
+                        edges.add(edge)
+        intra_edges = len(edges)
+        coverage = intra_edges/E
+        print ("E: ", E, "cluster edges:", intra_edges)
+        return coverage
 
     def visualize(self, mat):
         G = nx.Graph()
@@ -170,10 +218,10 @@ class MCL:
         nx.draw_networkx_edges(G, graph_pos)
 
         base_color = 0
-        color = ["r", "g", "coral", "chartreuse", "dodgerblue", "b", "m", "y", "pink", "purple", "orange", "dimgrey", "khaki", "maroon"]
+        color = ["r", "g", "b", "m", "y", "pink", "purple", "orange", "dodgerblue", "chartreuse", "dimgrey", "khaki", "coral", "maroon"]
         for edges in cluster_edges:
             #print ("edges: ", edges)
-            nx.draw_networkx_edges(G, graph_pos, edgelist=edges, width=8, alpha=0.5, edge_color=color[base_color])
+            nx.draw_networkx_edges(G, graph_pos, edgelist=edges, width=8, alpha=0.5, edge_color=color[base_color % len(color)])
             base_color += 1
         nx.draw_networkx_labels(G, graph_pos, font_size=12, font_family='sans-serif')
         plt.show()
@@ -224,7 +272,7 @@ def main():
 
     # clustering
     e = 3
-    r = 2
+    r = 5
     mcl = MCL(t_mat, e, r)
     mcl.mcl_clustering()
     # visualization
