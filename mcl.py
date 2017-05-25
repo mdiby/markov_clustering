@@ -170,7 +170,7 @@ class MCL:
         nx.draw_networkx_edges(G, graph_pos)
 
         base_color = 0
-        color = ["r", "g", "b", "m", "y", "pink", "purple", "orange", "dodgerblue", "chartreuse", "dimgrey", "khaki", "coral", "maroon"]
+        color = ["r", "g", "coral", "chartreuse", "dodgerblue", "b", "m", "y", "pink", "purple", "orange", "dimgrey", "khaki", "maroon"]
         for edges in cluster_edges:
             #print ("edges: ", edges)
             nx.draw_networkx_edges(G, graph_pos, edgelist=edges, width=8, alpha=0.5, edge_color=color[base_color])
@@ -218,8 +218,8 @@ def main():
     # preprocess dataset, returns transition matrix out of it
     # options: weighted/ unweighted
     # filename = "animal_data/dolphins/out.dolphins"
-    #filename = "animal_data/moreno_zebra/out.moreno_zebra_zebra"
-    filename = 'test_data.txt'
+    filename = "animal_data/moreno_zebra/out.moreno_zebra_zebra"
+    # filename = 'test_data.txt'
     t_mat = preprocess(filename)
 
     # clustering
