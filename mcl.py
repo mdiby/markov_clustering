@@ -70,7 +70,13 @@ class MCL:
                 is_steady = True
             #print ()
 
-        print (self.t_mat)
+        #print (self.t_mat)
+        # assessment 1 : modularity
+        modularity = self.get_modularity(t_mat_cp)
+        print("modularity:", modularity)
+        conductance = self.get_conductance(t_mat_cp)
+        print("conductance: ", conductance)
+
         self.visualize(t_mat_cp)
 
     def normalize(self):
@@ -79,6 +85,58 @@ class MCL:
             col_sum = col.sum()
             col = col/col_sum
             self.t_mat[:, i] = col
+
+    def get_modularity(self, mat):
+        modularity = 0
+        E = np.count_nonzero(mat)
+
+        for i in range(len(self.t_mat)):
+            row = self.t_mat[i,:]
+            nonzero_indices = np.where(row!=0)[0]
+            if len(nonzero_indices) > 0:
+                inter_cluster_edges = itertools.combinations(nonzero_indices, 2)
+                cur_edges = []
+                # Finding inter cluster edges
+                for edge in inter_cluster_edges:
+                    if mat[edge[0],edge[1]] == 1:
+                        cur_edges.append(edge)
+                ekk = 2 * len(cur_edges)
+                ak = 0
+                for j in range(len(mat)):
+                    if row[j] != 0:
+                        ak_list = np.where(mat[j,:]!=0)[0]
+                        ak = ak + len(ak_list)
+                modularity = modularity + ((ekk/E)-(ak/E)**2)
+        return modularity
+
+    def get_conductance(self, mat):
+        conductance = 0
+        E = np.count_nonzero(mat)/2
+        k = 0
+        for i in range(len(self.t_mat)):
+            row = self.t_mat[i,:]
+            nonzero_indices = np.where(row!=0)[0]
+            if len(nonzero_indices) > 0:
+                k += 1
+                inter_cluster_edges = itertools.combinations(nonzero_indices, 2)
+                cur_edges = []
+                # Finding inter cluster edges
+                for edge in inter_cluster_edges:
+                    if mat[edge[0],edge[1]] == 1:
+                        cur_edges.append(edge)
+                intra_edges = len(cur_edges)
+                aj = 0
+                for j in range(len(mat)):
+                    if row[j] != 0:
+                        aj_list = np.where(mat[j,:]!=0)[0]
+                        aj = aj + len(aj_list)
+                Aij = aj - (2 * intra_edges)
+                Ask = intra_edges + Aij
+                Askc = E - intra_edges
+                conductance = conductance + (Aij/min(Ask, Askc))
+        conductance = 1 - (conductance / k)
+        return conductance
+
 
     def visualize(self, mat):
         G = nx.Graph()
@@ -104,7 +162,7 @@ class MCL:
             if len(cur_edges) > 0:
                 cluster_edges.append(cur_edges)
 
-        print(cluster_edges)
+        #print(cluster_edges)
 
         graph_pos = nx.fruchterman_reingold_layout(G)
 
@@ -114,7 +172,7 @@ class MCL:
         base_color = 0
         color = ["r", "g", "b", "m", "y", "pink", "purple", "orange", "dodgerblue", "chartreuse", "dimgrey", "khaki", "coral", "maroon"]
         for edges in cluster_edges:
-            print ("edges: ", edges)
+            #print ("edges: ", edges)
             nx.draw_networkx_edges(G, graph_pos, edgelist=edges, width=8, alpha=0.5, edge_color=color[base_color])
             base_color += 1
         nx.draw_networkx_labels(G, graph_pos, font_size=12, font_family='sans-serif')
@@ -159,9 +217,9 @@ def preprocess(filename):
 def main():
     # preprocess dataset, returns transition matrix out of it
     # options: weighted/ unweighted
-    #filename = "animal_data/dolphins/out.dolphins"
-    filename = "animal_data/moreno_zebra/out.moreno_zebra_zebra"
-    #filename = 'test_data.txt'
+    # filename = "animal_data/dolphins/out.dolphins"
+    #filename = "animal_data/moreno_zebra/out.moreno_zebra_zebra"
+    filename = 'test_data.txt'
     t_mat = preprocess(filename)
 
     # clustering
