@@ -12,6 +12,11 @@ np.set_printoptions(threshold=np.inf)
 
 class MCL:
     def __init__(self, t_mat, e, r):
+        '''
+        self.t_mat = transition matrix of a given network
+        self.e = power parameter for expansion
+        self.r = inflation parameter for inflation
+        '''
         self.t_mat = t_mat
         self.e = e
         self.r = r
